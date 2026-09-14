@@ -1,0 +1,343 @@
+-- ========================================================
+-- 🤖 PEERAWAT AI HUB — มีระบบ AI แชทในตัว!
+-- ✅ เปิด-ปิดหน้าต่าง AI ได้ | พิมพ์ถาม-ตอบได้
+-- ✅ ปุ่มเลือกสีธีม 4 สี ตรงหัวเมนู
+-- ✅ ลากได้ เปิด-ปิดได้ ใช้ได้ทุกแมพ
+-- ========================================================
+
+local UIS = game:GetService("UserInputService")
+local Tween = game:GetService("TweenService")
+local Players = game:GetService("Players")
+local LP = Players.LocalPlayer
+
+-- ลบเก่า
+if game.CoreGui:FindFirstChild("PEERAWAT_AI_HUB") then game.CoreGui.PEERAWAT_AI_HUB:Destroy() end
+
+-- ====================== 🎨 ชุดสีธีม ======================
+local Themes = {
+    Red = {BG=Color3.fromRGB(40,10,15), Header=Color3.fromRGB(70,15,20), Accent=Color3.fromRGB(220,40,70), Text=Color3.fromRGB(255,220,225), Item=Color3.fromRGB(90,20,25)},
+    Black = {BG=Color3.fromRGB(20,20,22), Header=Color3.fromRGB(35,35,38), Accent=Color3.fromRGB(90,90,95), Text=Color3.fromRGB(230,230,230), Item=Color3.fromRGB(45,45,48)},
+    White = {BG=Color3.fromRGB(240,240,242), Header=Color3.fromRGB(220,220,222), Accent=Color3.fromRGB(90,90,100), Text=Color3.fromRGB(40,40,45), Item=Color3.fromRGB(230,230,232)},
+    Teal = {BG=Color3.fromRGB(10,30,30), Header=Color3.fromRGB(20,50,50), Accent=Color3.fromRGB(20,180,160), Text=Color3.fromRGB(210,245,240), Item=Color3.fromRGB(25,70,70)}
+}
+local CurrentTheme = "Red"
+local t = Themes[CurrentTheme]
+
+-- ====================== 📦 สร้าง GUI หลัก ======================
+local Gui = Instance.new("ScreenGui")
+Gui.Name = "PEERAWAT_AI_HUB"
+Gui.ResetOnSpawn = false
+Gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+local ok, _ = pcall(function() Gui.Parent = game.CoreGui end)
+if not ok then Gui.Parent = LP:WaitForChild("PlayerGui") end
+
+-- 🔥 ปุ่มลอยเปิดเมนูหลัก
+local MainToggle = Instance.new("TextButton")
+MainToggle.Size = UDim2.new(0, 60, 0, 60)
+MainToggle.Position = UDim2.new(0.01, 0, 0.5, 0)
+MainToggle.BackgroundColor3 = t.Accent
+MainToggle.Text = "🔥"
+MainToggle.TextSize = 32
+MainToggle.Font = Enum.Font.GothamBold
+MainToggle.AutoLocalize = false
+MainToggle.Parent = Gui
+Instance.new("UICorner", MainToggle).CornerRadius = UDim.new(1, 0)
+
+-- 🤖 ปุ่มลอยเปิด AI แชท
+local AIToggle = Instance.new("TextButton")
+AIToggle.Size = UDim2.new(0, 60, 0, 60)
+AIToggle.Position = UDim2.new(0.01, 70, 0.5, 0)
+AIToggle.BackgroundColor3 = Color3.fromRGB(80, 120, 255)
+AIToggle.Text = "🤖"
+AIToggle.TextSize = 32
+AIToggle.Font = Enum.Font.GothamBold
+AIToggle.AutoLocalize = false
+AIToggle.Parent = Gui
+Instance.new("UICorner", AIToggle).CornerRadius = UDim.new(1, 0)
+
+-- ลากปุ่มลอยได้
+local function MakeDraggable(btn)
+    local dragging, dragStart, startPos
+    btn.InputBegan:Connect(function(i)
+        if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
+            dragging = true; dragStart = i.Position; startPos = btn.Position
+            i.Changed:Connect(function() if i.UserInputState == Enum.UserInputState.End then dragging = false end end)
+        end
+    end)
+    UIS.InputChanged:Connect(function(i)
+        if dragging and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then
+            local d = i.Position - dragStart
+            btn.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + d.X, startPos.Y.Scale, startPos.Y.Offset + d.Y)
+        end
+    end)
+end
+MakeDraggable(MainToggle)
+MakeDraggable(AIToggle)
+
+-- ====================== 📦 หน้าต่างเมนูหลัก ======================
+local MainWin = Instance.new("Frame")
+MainWin.Size = UDim2.new(0, 420, 0, 500)
+MainWin.Position = UDim2.new(0.05, 0, 0.1, 0)
+MainWin.BackgroundColor3 = t.BG
+MainWin.BorderSizePixel = 2
+MainWin.BorderColor3 = t.Accent
+MainWin.ClipsDescendants = true
+MainWin.Visible = false
+MainWin.Parent = Gui
+Instance.new("UICorner", MainWin).CornerRadius = UDim.new(0, 16)
+
+-- 🎯 หัวเมนู — มีปุ่มเลือกสีตรงนี้!
+local MainHeader = Instance.new("Frame")
+MainHeader.Size = UDim2.new(1, 0, 0, 55)
+MainHeader.BackgroundColor3 = t.Header
+MainHeader.Parent = MainWin
+Instance.new("UICorner", MainHeader).CornerRadius = UDim.new(0, 16)
+
+local MainTitle = Instance.new("TextLabel")
+MainTitle.Size = UDim2.new(0, 200, 1, 0)
+MainTitle.Position = UDim2.new(0, 15, 0, 0)
+MainTitle.BackgroundTransparency = 1
+MainTitle.Text = "PEERAWAT HUB — 100 ฟังก์ชัน 🔥"
+MainTitle.TextColor3 = t.Accent
+MainTitle.TextSize = 16
+MainTitle.Font = Enum.Font.GothamBold
+MainTitle.TextXAlignment = Enum.TextXAlignment.Left
+MainTitle.Parent = MainHeader
+
+-- 🎨 ปุ่มเลือกสีธีม ตรงจุดที่วงไว้!
+local ThemeBox = Instance.new("Frame")
+ThemeBox.Size = UDim2.new(0, 150, 0, 36)
+ThemeBox.Position = UDim2.new(1, -200, 0.5, -18)
+ThemeBox.BackgroundTransparency = 1
+ThemeBox.Parent = MainHeader
+
+-- ปุ่มปิดเมนูหลัก
+local MainClose = Instance.new("TextButton")
+MainClose.Size = UDim2.new(0, 40, 0, 40)
+MainClose.Position = UDim2.new(1, -45, 0.5, -20)
+MainClose.BackgroundColor3 = t.Accent
+MainClose.Text = "✕"
+MainClose.TextColor3 = Color3.fromRGB(255,255,255)
+MainClose.TextSize = 18
+MainClose.Font = Enum.Font.GothamBold
+MainClose.AutoLocalize = false
+MainClose.Parent = MainHeader
+Instance.new("UICorner", MainClose).CornerRadius = UDim.new(0, 8)
+
+-- ฟังก์ชันเปลี่ยนธีม
+local function ApplyTheme(name)
+    CurrentTheme = name; t = Themes[name]
+    MainWin.BackgroundColor3 = t.BG; MainWin.BorderColor3 = t.Accent
+    MainHeader.BackgroundColor3 = t.Header; MainTitle.TextColor3 = t.Accent
+    MainClose.BackgroundColor3 = t.Accent
+    if AIWin then
+        AIWin.BackgroundColor3 = t.BG; AIHeader.BackgroundColor3 = t.Header
+        AITitle.TextColor3 = t.Accent; AIClose.BackgroundColor3 = t.Accent
+    end
+end
+
+-- สร้างปุ่มสี
+local function ColorBtn(x, color, key)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0, 30, 0, 30)
+    btn.Position = UDim2.new(0, x, 0, 3)
+    btn.BackgroundColor3 = color
+    btn.Text = ""; btn.AutoLocalize = false
+    btn.Parent = ThemeBox
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(1, 0)
+    local stroke = Instance.new("UIStroke", btn)
+    stroke.Thickness = (CurrentTheme==key) and 3 or 1
+    stroke.Color = (key=="White") and Color3.fromRGB(0,0,0) or Color3.fromRGB(255,255,255)
+    btn.MouseButton1Click:Connect(function() ApplyTheme(key) end)
+end
+ColorBtn(0,    Color3.fromRGB(220,40,70),    "Red")    -- 🔴
+ColorBtn(38,   Color3.fromRGB(45,45,48),      "Black")  -- ⚫
+ColorBtn(76,   Color3.fromRGB(230,230,232),  "White")  -- ⚪
+ColorBtn(114,  Color3.fromRGB(20,180,160),    "Teal")   -- 🔵
+
+-- ลากหน้าต่างเมนูหลัก
+local function MakeWindowDraggable(win, header)
+    local drag, dStart, wPos
+    header.InputBegan:Connect(function(i)
+        if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
+            drag = true; dStart = i.Position; wPos = win.Position
+            i.Changed:Connect(function() if i.UserInputState == Enum.UserInputState.End then drag = false end end)
+        end
+    end)
+    UIS.InputChanged:Connect(function(i)
+        if drag and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then
+            local d = i.Position - dStart
+            win.Position = UDim2.new(wPos.X.Scale, wPos.X.Offset + d.X, wPos.Y.Scale, wPos.Y.Offset + d.Y)
+        end
+    end)
+end
+MakeWindowDraggable(MainWin, MainHeader)
+
+-- เปิด-ปิดเมนูหลัก
+MainToggle.MouseButton1Click:Connect(function() MainWin.Visible = not MainWin.Visible end)
+MainClose.MouseButton1Click:Connect(function() MainWin.Visible = false end)
+
+-- ====================== 🤖 หน้าต่าง AI แชท ======================
+local AIWin = Instance.new("Frame")
+AIWin.Size = UDim2.new(0, 380, 0, 520)
+AIWin.Position = UDim2.new(0.5, -190, 0.1, 0)
+AIWin.BackgroundColor3 = t.BG
+AIWin.BorderSizePixel = 2
+AIWin.BorderColor3 = Color3.fromRGB(80, 120, 255)
+AIWin.ClipsDescendants = true
+AIWin.Visible = false
+AIWin.Parent = Gui
+Instance.new("UICorner", AIWin).CornerRadius = UDim.new(0, 16)
+
+-- หัว AI
+local AIHeader = Instance.new("Frame")
+AIHeader.Size = UDim2.new(1, 0, 0, 55)
+AIHeader.BackgroundColor3 = t.Header
+AIHeader.Parent = AIWin
+Instance.new("UICorner", AIHeader).CornerRadius = UDim.new(0, 16)
+
+local AITitle = Instance.new("TextLabel")
+AITitle.Size = UDim2.new(1, -50, 1, 0)
+AITitle.Position = UDim2.new(0, 15, 0, 0)
+AITitle.BackgroundTransparency = 1
+AITitle.Text = "🤖 PEERAWAT AI — ถาม-ตอบได้เลย!"
+AITitle.TextColor3 = Color3.fromRGB(80, 120, 255)
+AITitle.TextSize = 16
+AITitle.Font = Enum.Font.GothamBold
+AITitle.TextXAlignment = Enum.TextXAlignment.Left
+AITitle.Parent = AIHeader
+
+local AIClose = Instance.new("TextButton")
+AIClose.Size = UDim2.new(0, 40, 0, 40)
+AIClose.Position = UDim2.new(1, -45, 0.5, -20)
+AIClose.BackgroundColor3 = Color3.fromRGB(80, 120, 255)
+AIClose.Text = "✕"
+AIClose.TextColor3 = Color3.fromRGB(255,255,255)
+AIClose.TextSize = 18
+AIClose.Font = Enum.Font.GothamBold
+AIClose.AutoLocalize = false
+AIClose.Parent = AIHeader
+Instance.new("UICorner", AIClose).CornerRadius = UDim.new(0, 8)
+
+-- กล่องแชท
+local ChatContainer = Instance.new("ScrollingFrame")
+ChatContainer.Size = UDim2.new(1, -16, 1, -115)
+ChatContainer.Position = UDim2.new(0, 8, 0, 60)
+ChatContainer.BackgroundTransparency = 1
+ChatContainer.ScrollBarThickness = 4
+ChatContainer.ScrollBarColor3 = Color3.fromRGB(80, 120, 255)
+ChatContainer.AutomaticCanvasSize = Enum.AutomaticSize.Y
+ChatContainer.CanvasSize = UDim2.new(0,0,0,0)
+ChatContainer.Parent = AIWin
+
+local ChatLayout = Instance.new("UIListLayout")
+ChatLayout.Padding = UDim.new(0, 8)
+ChatLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+ChatLayout.Parent = ChatContainer
+
+-- กล่องพิมพ์ข้อความ
+local InputBox = Instance.new("TextBox")
+InputBox.Size = UDim2.new(1, -90, 0, 40)
+InputBox.Position = UDim2.new(0, 8, 1, -48)
+InputBox.BackgroundColor3 = t.Header
+InputBox.Text = "พิมพ์คำถามให้ AI ที่นี่..."
+InputBox.PlaceholderText = "พิมพ์คำถามให้ AI ที่นี่..."
+InputBox.TextColor3 = t.Text
+InputBox.TextSize = 14
+InputBox.Font = Enum.Font.Gotham
+InputBox.TextXAlignment = Enum.TextXAlignment.Left
+InputBox.AutoLocalize = false
+InputBox.ClearTextOnFocus = false
+InputBox.Parent = AIWin
+Instance.new("UICorner", InputBox).CornerRadius = UDim.new(0, 10)
+
+-- ปุ่มส่งข้อความ
+local SendBtn = Instance.new("TextButton")
+SendBtn.Size = UDim2.new(0, 70, 0, 40)
+SendBtn.Position = UDim2.new(1, -78, 1, -48)
+SendBtn.BackgroundColor3 = Color3.fromRGB(80, 120, 255)
+SendBtn.Text = "ส่ง 📤"
+SendBtn.TextColor3 = Color3.fromRGB(255,255,255)
+SendBtn.TextSize = 14
+SendBtn.Font = Enum.Font.GothamBold
+SendBtn.AutoLocalize = false
+SendBtn.Parent = AIWin
+Instance.new("UICorner", SendBtn).CornerRadius = UDim.new(0, 10)
+
+-- เพิ่มข้อความในกล่องแชท
+local function AddMessage(sender, text, color)
+    local Msg = Instance.new("Frame")
+    Msg.Size = UDim2.new(1, -20, 0, 0)
+    Msg.AutomaticSize = Enum.AutomaticSize.Y
+    Msg.BackgroundColor3 = color
+    Msg.Parent = ChatContainer
+    Instance.new("UICorner", Msg).CornerRadius = UDim.new(0, 10)
+
+    local Label = Instance.new("TextLabel")
+    Label.Size = UDim2.new(1, -16, 1, 0)
+    Label.Position = UDim2.new(0, 8, 0, 8)
+    Label.BackgroundTransparency = 1
+    Label.Text = sender..": "..text
+    Label.TextColor3 = Color3.fromRGB(255,255,255)
+    Label.TextSize = 13
+    Label.Font = Enum.Font.Gotham
+    Label.TextWrapped = true
+    Label.TextXAlignment = Enum.TextXAlignment.Left
+    Label.AutomaticSize = Enum.AutomaticSize.Y
+    Label.Parent = Msg
+
+    task.wait(0.05)
+    ChatContainer.CanvasPosition = Vector2.new(0, ChatContainer.CanvasSize.Y.Offset)
+end
+
+-- 🧠 ฐานข้อมูลคำตอบ AI
+local AIResponses = {
+    ["สวัสดี"] = "สวัสดีครับ! 👋 ผมคือ AI ของ PEERAWAT ยินดีต้อนรับ!",
+    ["ชื่ออะไร"] = "ผมชื่อ PEERAWAT AI ครับ 🤖",
+    ["ทำอะไรได้บ้าง"] = "ผมสามารถตอบคำถาม ให้คำแนะนำ และช่วยแก้ปัญหาได้ครับ!",
+    ["ขอบคุณ"] = "ด้วยความยินดีครับ! 😊 มีอะไรถามได้ตลอดเลย",
+    ["ช่วยด้วย"] = "มีอะไรให้ช่วยบอกได้เลยครับ! พร้อมช่วยเหลือเสมอ 🤝",
+    ["เล่นเกม"] = "ขอให้สนุกกับเกมนะครับ! 🎮🔥",
+    ["ลาก่อน"] = "บ๊ายบาย! 👋 ไว้มาคุยกันใหม่นะครับ!",
+    ["สีอะไรดี"] = "แนะนำสีแดง 🔴 สีดำ ⚫ หรือสีเขียวน้ำเงิน 🔵 ก็สวยหมดครับ!",
+    default = "ขออภัยครับ ผมยังไม่เข้าใจคำถามนี้ 😅 ลองถามอย่างอื่นดูนะครับ!"
+}
+
+-- รับคำถามและตอบกลับ
+local function AskAI(question)
+    question = string.lower(question)
+    local answer = AIResponses.default
+    for q, a in pairs(AIResponses) do
+        if q ~= "default" and string.find(question, string.lower(q)) then
+            answer = a; break
+        end
+    end
+    return answer
+end
+
+-- ส่งข้อความ
+local function SendMessage()
+    local text = InputBox.Text
+    if text == "" or text == InputBox.PlaceholderText then return end
+    AddMessage("คุณ", text, Color3.fromRGB(60, 90, 180))
+    InputBox.Text = ""
+    task.wait(0.5)
+    AddMessage("🤖 AI", AskAI(text), Color3.fromRGB(40, 160, 120))
+end
+
+SendBtn.MouseButton1Click:Connect(SendMessage)
+InputBox.FocusLost:Connect(function(enterPressed) if enterPressed then SendMessage() end end)
+
+-- เปิด-ปิด AI แชท
+AIToggle.MouseButton1Click:Connect(function() AIWin.Visible = not AIWin.Visible end)
+AIClose.MouseButton1Click:Connect(function() AIWin.Visible = false end)
+
+MakeWindowDraggable(AIWin, AIHeader)
+
+-- ข้อความต้อนรับตอนเปิดครั้งแรก
+task.wait(0.5)
+AddMessage("🤖 AI", "สวัสดีครับ! ยินดีต้อนรับสู่ PEERAWAT AI 🎉 พิมพ์คำถามด้านล่างได้เลย!", Color3.fromRGB(40, 160, 120))
+
+print("✅ PEERAWAT AI HUB — โหลดสำเร็จ!")
+print("👉 กดปุ่ม 🔥 เปิดเมนูหลัก | กดปุ่ม 🤖 เปิด AI แชท")
+                                  
